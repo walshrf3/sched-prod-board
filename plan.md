@@ -13,7 +13,9 @@ what just broke and takes it.
 
 ## Requirements
 
-- **R1** New incidents appear live at the top of the list, newest first.
+- **R1** The list shows incidents newest first and holds still while it is on screen: new incidents are announced
+  in a "N new" bar above the list and come in, at the top, when on-call clicks it. *(Changed 2026-11-19 by product,
+  SCHED-4515: live insertion at the top let a new incident take an ack meant for the row below it.)*
 - **R2** Each incident row has an **Ack** button. Ack sends the ack (`api.ack(id)`) and marks the row acked.
 - **R3** Show a loader until incidents load.
 - **R4** The board refreshes itself every 2 seconds while open.
@@ -32,6 +34,7 @@ what just broke and takes it.
 | `ack` | the Ack button in a row |
 | `acked` | the acked mark in a row |
 | `build-sha` | the sha in the footer |
+| `new-bar` | the "N new" bar that brings held incidents in (SCHED-4515) |
 
 ## Done
 

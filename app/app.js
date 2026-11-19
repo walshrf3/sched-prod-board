@@ -7,6 +7,7 @@ const list = document.querySelector('[data-testid="incident-list"]');
 const loader = document.querySelector('[data-testid="loader"]');
 const empty = document.querySelector('[data-testid="empty"]');
 const status = document.querySelector('[data-testid="status"]');
+const newBar = document.querySelector('[data-testid="new-bar"]');
 
 /** Rows on screen, keyed by incident id. Rows are kept, not re-created, so a click lands on the row it was aimed at. */
 const rows = new Map();
@@ -59,7 +60,7 @@ async function onAck(id, row, button) {
 }
 
 function buildRow(i) {
-  const row = el('li', { 'data-testid': 'incident-row', 'data-id': i.id, class: `row ${i.severity}` });
+  const row = el('li', { 'data-testid': 'incident-row', 'data-id': i.id, 'data-opened-at': i.openedAt, class: `row ${i.severity}` });
   row.append(
     el('span', { class: 'id' }, i.id),
     el('span', { class: 'sev' }, i.severity),
@@ -75,34 +76,53 @@ function buildRow(i) {
   return row;
 }
 
-function render(incidents) {
-  // R1: newest first, whatever order the page comes in.
-  const sorted = [...incidents].sort((a, b) => Date.parse(b.openedAt) - Date.parse(a.openedAt));
-  const seen = new Set(sorted.map((i) => i.id));
+/** Incidents that arrived after the list was drawn, held off-screen until on-call asks for them (product, SCHED-4515). */
+const held = new Map();
 
-  for (const [id, row] of rows) {
-    if (!seen.has(id)) {
-      row.remove();
-      rows.delete(id);
-    }
-  }
-
-  let prev = null;
-  for (const i of sorted) {
-    let row = rows.get(i.id);
-    if (!row) {
-      row = buildRow(i);
-      rows.set(i.id, row);
-      if (loaded) row.classList.add('is-new');
-    }
-    const want = prev ? prev.nextSibling : list.firstChild;
-    if (row !== want) list.insertBefore(row, want);
-    prev = row;
-  }
-
-  empty.hidden = sorted.length > 0;
-  list.hidden = sorted.length === 0;
+function showNewBar() {
+  const n = held.size;
+  newBar.textContent = n === 1 ? '1 new incident: show' : `${n} new incidents: show`;
+  // The bar's slot is always reserved, so showing it never moves a row.
+  newBar.classList.toggle('is-shown', n > 0);
+  newBar.disabled = n === 0;
 }
+
+/** Puts incidents into the list at their place by time, newest first (R1). Rows already on screen never move or disappear. */
+function insert(incidents) {
+  const sorted = [...incidents].sort((a, b) => Date.parse(b.openedAt) - Date.parse(a.openedAt));
+  for (const i of sorted) {
+    if (rows.has(i.id)) continue;
+    const row = buildRow(i);
+    if (loaded) row.classList.add('is-new');
+    const t = Date.parse(i.openedAt);
+    const before = [...list.children].find((r) => Date.parse(r.dataset.openedAt) < t) ?? null;
+    list.insertBefore(row, before);
+    rows.set(i.id, row);
+  }
+}
+
+function render(incidents) {
+  if (!loaded || rows.size === 0) {
+    insert(incidents); // nothing on screen yet, so nothing can move under the pointer
+  } else {
+    // R1 as product decided: the list holds still while it is on screen; new incidents wait behind the bar.
+    for (const i of incidents) if (!rows.has(i.id) && !held.has(i.id)) held.set(i.id, i);
+    showNewBar();
+  }
+  empty.hidden = rows.size > 0;
+  list.hidden = rows.size === 0;
+}
+
+function showHeld() {
+  if (!held.size) return;
+  const incoming = [...held.values()];
+  held.clear();
+  insert(incoming);
+  showNewBar();
+  empty.hidden = rows.size > 0;
+  list.hidden = rows.size === 0;
+}
+newBar.addEventListener('click', showHeld);
 
 let loaded = false;
 async function refresh() {

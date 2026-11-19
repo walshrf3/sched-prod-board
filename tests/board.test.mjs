@@ -38,6 +38,7 @@ try {
   {
     const page = await browser.newPage();
     const a = inc('A', '2026-11-19T10:00:00Z', '<img src=x onerror=alert(1)>'), b = inc('B', '2026-11-19T11:00:00Z'), c = inc('C', '2026-11-19T12:00:00Z');
+    await page.addInitScript(() => { window.__removed = 0; new MutationObserver((rs) => rs.forEach((r) => r.removedNodes.forEach((n) => { if (n.dataset?.testid === 'incident-row') window.__removed++; }))).observe(document, { childList: true, subtree: true }); });
     const m = await mocked(page, { delay: 800, pages: [[a, b], [a, b], [c, b, a]] });
     await page.goto(base);
     check('R3 loader visible on open', await page.getByTestId('loader').isVisible());
@@ -50,13 +51,33 @@ try {
     await rowA.getByTestId('ack').click();
     await rowA.getByTestId('acked').waitFor();
     check('R2 ack sends that id', JSON.stringify(m.acks) === '["A"]', JSON.stringify(m.acks));
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid=incident-row]').length === 3, null, { timeout: 7000 });
-    check('R1 new incident on top without reload', JSON.stringify(await ids()) === '["C","B","A"]', JSON.stringify(await ids()));
-    check('R2 acked mark survives refresh', (await rowA.getByTestId('acked').count()) === 1);
+    await page.getByTestId('new-bar').waitFor({ state: 'visible', timeout: 7000 });
+    check('SCHED-4515 list holds still while new incidents wait', JSON.stringify(await ids()) === '["B","A"]', JSON.stringify(await ids()));
+    check('SCHED-4515 bar counts held incidents', /^1 new incident/.test(await page.getByTestId('new-bar').textContent()), await page.getByTestId('new-bar').textContent());
+    const removed = await page.evaluate(() => window.__removed);
+    await page.getByTestId('new-bar').click();
+    check('R1 new-bar click brings new incident in on top', JSON.stringify(await ids()) === '["C","B","A"]', JSON.stringify(await ids()));
+    check('SCHED-4515 bar hides after click', !(await page.getByTestId('new-bar').isVisible()));
+    check('no row removed', removed === 0, String(removed));
     const before = m.calls(); await page.waitForTimeout(4500);
     check('R4 refresh about every 2 s', m.calls() - before >= 2 && m.calls() - before <= 3, `${m.calls() - before} calls in 4.5 s`);
     const sha = await page.locator('meta[name=build]').getAttribute('content');
     check('R6 meta and footer sha match', /^[0-9a-f]{40}$/.test(sha) && sha === (await page.getByTestId('build-sha').textContent()), sha);
+    await page.close();
+  }
+  // SCHED-4515: an incident landing while the pointer is on a row does not move it
+  {
+    const page = await browser.newPage();
+    const a = inc('A', '2026-11-19T10:00:00Z'), b = inc('B', '2026-11-19T11:00:00Z'), d = inc('D', '2026-11-19T13:00:00Z');
+    const m = await mocked(page, { pages: [[b, a], [b, a], [d, b, a]] });
+    await page.goto(base);
+    const btn = page.locator('[data-testid=incident-row][data-id=B] [data-testid=ack]');
+    const box = await btn.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.getByTestId('new-bar').waitFor({ state: 'visible', timeout: 7000 });
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await page.locator('[data-testid=incident-row][data-id=B] [data-testid=acked]').waitFor();
+    check('SCHED-4515 ack aimed at B during an arrival acks B', JSON.stringify(m.acks) === '["B"]', JSON.stringify(m.acks));
     await page.close();
   }
   // empty state
