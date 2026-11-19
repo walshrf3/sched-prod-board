@@ -9,3 +9,18 @@ h1 { margin: 0; font-size: 22px; }
 .row.sev2 .sev { color: #a15c00; }
 .row time { color: #555; font-variant-numeric: tabular-nums; }
 footer { color: #777; font-size: 13px; }
+.status { margin: 6px 0 0; color: #666; font-size: 13px; min-height: 18px; }
+.status.stale { color: #b00020; }
+.loader { display: flex; align-items: center; gap: 10px; padding: 16px 12px; color: #555; }
+.spin { width: 16px; height: 16px; border: 2px solid #ccc; border-top-color: #555; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { padding: 16px 12px; color: #555; }
+.ack { min-width: 72px; min-height: 32px; font: inherit; border: 1px solid #888; border-radius: 6px; background: #fff; cursor: pointer; }
+.ack:hover:not(:disabled) { background: #f0f0f0; }
+.ack:disabled { cursor: progress; }
+.acked { display: inline-block; min-width: 72px; text-align: center; color: #1b6e2c; font-weight: 600; }
+.row.is-acked { background: #f3faf4; }
+.row.ack-failed .ack { border-color: #b00020; color: #b00020; }
+.row.is-new { animation: arrive 2s ease-out; }
+@keyframes arrive { from { background: #fff6cc; } to { background: #fff; } }
+footer code { font-family: ui-monospace, monospace; }
