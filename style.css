@@ -1,0 +1,31 @@
+body { margin: 0; font: 15px/1.4 system-ui, sans-serif; color: #1d1d1f; background: #fafafa; }
+header, main, footer { padding: 12px 24px; }
+h1 { margin: 0; font-size: 22px; }
+.sub { margin: 2px 0 0; color: #666; }
+.list { list-style: none; margin: 0; padding: 0; max-width: 960px; }
+.row { display: grid; grid-template-columns: 90px 50px 1fr 200px auto; gap: 12px; align-items: center; min-height: 44px; padding: 0 12px; border-bottom: 1px solid #e5e5e5; background: #fff; }
+.row .id { font-family: ui-monospace, monospace; }
+.row.sev1 .sev { color: #b00020; font-weight: 600; }
+.row.sev2 .sev { color: #a15c00; }
+.row time { color: #555; font-variant-numeric: tabular-nums; }
+footer { color: #777; font-size: 13px; }
+.status { margin: 6px 0 0; color: #666; font-size: 13px; min-height: 18px; }
+.status.stale { color: #b00020; }
+.loader { display: flex; align-items: center; gap: 10px; padding: 16px 12px; color: #555; }
+.spin { width: 16px; height: 16px; border: 2px solid #ccc; border-top-color: #555; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { padding: 16px 12px; color: #555; }
+.ack { min-width: 72px; min-height: 32px; font: inherit; border: 1px solid #888; border-radius: 6px; background: #fff; cursor: pointer; }
+.ack:hover:not(:disabled) { background: #f0f0f0; }
+.ack:disabled { cursor: progress; }
+.acked { display: inline-block; min-width: 72px; text-align: center; color: #1b6e2c; font-weight: 600; }
+.row.is-acked { background: #f3faf4; }
+.row.ack-failed .ack { border-color: #b00020; color: #b00020; }
+.row.is-new { animation: arrive 2s ease-out; }
+@keyframes arrive { from { background: #fff6cc; } to { background: #fff; } }
+footer code { font-family: ui-monospace, monospace; }
+/* SCHED-4515: the slot is always there, so the bar appearing never pushes a row down. */
+.new-slot { max-width: 960px; height: 40px; margin-bottom: 6px; }
+.new-bar { visibility: hidden; width: 100%; height: 100%; font: inherit; font-weight: 600; color: #0b4a8b; background: #e8f1fc; border: 1px solid #9cc1ea; border-radius: 6px; cursor: pointer; }
+.new-bar.is-shown { visibility: visible; }
+.new-bar:hover { background: #d9e8fa; }
